@@ -1,4 +1,29 @@
-venv/
+# System
+.DS_Store
+Thumbs.db
+
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
 .env
-data/
+
+# Project Abyss Specific
+surrealdb-data/
+*.db
+
+# Logs
+logs/
+*.log
+
+# Cursor/IDE
+.idea/
+.vscode/
+
+# Build
+build/
+dist/
+*.egg-info/

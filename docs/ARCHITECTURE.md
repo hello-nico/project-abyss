@@ -7,6 +7,7 @@
 #Project Abyss: 自主化开源情报系统架构书##I. 核心方法论 (The Doctrine)在编写任何代码之前，必须明确情报分析的底层逻辑。本系统遵循 **OSINT 金字塔** 结构，通过多源互证（Triangulation）消除噪音。
 
 1. **分层数据摄入 (Layered Ingestion):**
+
 * **L1 硬数据 (Truth):** 财报 (SEC/巨潮)、交易所数据 (Short Interest, Beta)。**作用：锚定现实。**
 * **L2 逻辑层 (Logic):** 深度长文 (雪球/Seeking Alpha)、电话会议实录。**作用：获取多维视角。**
 * **L3 情绪与信号 (Signal):** 社交媒体 (X/Weibo)、搜索热度、GitHub Trending。**作用：捕捉拐点与异常。**
@@ -16,8 +17,6 @@
 * **Code-First:** 拒绝低代码平台的黑盒，一切逻辑代码化。
 * **Graph-Centric:** 世界是网状的，不是表状的。使用图数据库关联实体。
 * **Agentic Swarm:** 模拟“专家委员会”，通过不同的人格（Persona）进行左右互搏。
-
-
 
 ---
 
@@ -102,8 +101,12 @@ services:
 
 ###Phase 2: 数据管道与图谱构建 (Pipeline & Schema)*目标：数据自动化流入，并建立“文章-提及-公司”的关系。*
 
-1. **SurrealQL 建模:**
-定义 `article` (存向量), `company`, `person` 节点，以及 `mentions`, `impacts` 边。
+1. **SurrealQL 建模 (Tripartite Schema):**
+实施 **"Truth-Logic-Signal"** 三层架构，确保数据源的互证能力：
+*   **L1 事实层 (Truth Anchors):** `report` (10-K/Q, 公告), `market_metric` (股价, SI). **作用：反驳与验真。**
+*   **L2 逻辑层 (Conceptual Logic):** `concept` (宏观/赛道), `article` (长文/逻辑). **作用：连接趋势与实体。**
+*   **L3 信号层 (Raw Signals):** `pulse` (高频舆情/X/Weibo), `trend_metric` (Google Trends). **作用：捕捉拐点。**
+*   **核心关系:** `reflects_on` (信号->概念), `involves` (概念<->公司), `mentions` (叙事->实体).
 2. **编写 Python Ingestor:**
 * 使用 `feedparser` 轮询 RSSHub。
 * 检测到新 URL -> 调用 `Crawl4AI` 获取正文 Markdown。
@@ -123,24 +126,31 @@ await db.query("""
 
 
 
-###Phase 3: MCP Agent 开发 (The Brain)*目标：让 Claude 能“使用”你的数据库和爬虫。*
+###Phase 3: MCP Agent Swarm (The Brain)
+*目标：构建具备“主动/被动”双重能力的专家委员会。*
 
-1. **创建 MCP Server:**
-使用 Python SDK 创建 `intelligence-server`。
-2. **定义工具 (Tools):**
-* `search_knowledge_base(query: str)`: 混合搜索 SurrealDB (向量 + 图遍历)。
-* `fetch_realtime_web(url: str)`: 既然你有 Crawl4AI，让 Agent 也可以主动去读它发现的新链接。
-* `get_asset_price(ticker: str)`: 调用 `yfinance`。
+1.  **Agent 组织架构 (The Committee):**
+    *   **Watcher (哨兵):** 专注于 L3 信号，使用 `scan_anomalies` 工具。
+    *   **Analyst (分析师):** 专注于 L2 逻辑与图谱游走，使用 `trace_narrative_chain`。
+    *   **Auditor (审计师):** 专注于 L1 事实核查，使用 `verify_financials`。
+    *   **Commander (指挥官):** 综合决策，并有权下达“指令”。
 
+2.  **主动猎人机制 (Proactive Hunter):**
+    *   引入 `directive` 表，存储长期监视任务（如 "Track Elon Musk's replies"）。
+    *   开发 **Hunter Worker**：区别于被动 RSS，它根据指令主动调用 Browserless 执行深度抓取（Deep Dive）。
+    *   **Tool**: `create_surveillance_directive(target, rules)` 让 Agent 可以主动建立长期追踪。
 
-3. **专家人格注入 (Context Injection):**
-创建 `prompts/` 目录，存放 `.md` 格式的专家设定（如“空头分析师.md”），在 MCP Server 启动时加载。
+3.  **MCP 工具集 (Graph & Action Tools):**
+    *   `graph_explore(start_node, depth)`: 在知识图谱中游走发现隐性关联。
+    *   `deep_dive_search(query)`: 触发实时深度爬取，不依赖历史库存。
+    *   `verify_claim(fact)`: 交叉验证 L1 数据。
 
-###Phase 4: 自主闭环 (The Loop)*目标：从“人找信息”变为“信息找人”。*
+###Phase 4: 自主闭环 (The Loop)
+*目标：从“人找信息”变为“信息找人”，再到“人命令信息”。*
 
-1. **设置 Live Query 监听器:**
-编写一个后台脚本监听 SurrealDB：
-`LIVE SELECT * FROM article WHERE sentiment < -0.8` (监控极度负面情绪)。
+1.  **设置 Live Query 监听器:**
+    编写一个后台脚本监听 SurrealDB：
+    `LIVE SELECT * FROM pulse WHERE sentiment < -0.8 AND engagement.reposts > 1000` (监控恐慌爆发)。
 2. **触发 Agent Workflow:**
 监听到事件 -> 唤醒 Claude -> 注入上下文 -> 生成简报 -> 推送到你的终端或 Slack。
 

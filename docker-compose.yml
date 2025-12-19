@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  rsshub:
+    image: diygod/rsshub
+    restart: always
+    ports:
+      - "1200:1200"
+    environment:
+      PUPPETEER_WS_ENDPOINT: 'ws://browserless:3000'
+      # Allow some lax configurations for broader compatibility if needed, 
+      # but sticking to defaults for now.
+    depends_on:
+      - browserless
+
+  browserless:
+    image: browserless/chrome
+    restart: always
+    # No ports exposed needed for host if only RSSHub relies on it, 
+    # but good for debug if needed. Keeping internal only based on requirements.
+
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    user: root
+    restart: always
+    volumes:
+      - ./surrealdb-data:/data
+    # Start SurrealDB, bind to 0.0.0.0 so it's accessible outside the container,
+    # and store data in the mounted /data directory.
+    command: start --user root --pass root --bind 0.0.0.0:8000 file:///data/surreal.db
+    ports:
+      - "8000:8000"
