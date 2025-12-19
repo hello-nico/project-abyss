@@ -36,6 +36,15 @@ DEFINE FIELD IF NOT EXISTS value ON trend_metric TYPE float; -- e.g. 100 (Max He
 DEFINE FIELD IF NOT EXISTS velocity ON trend_metric TYPE float; -- 环比变化率 (WoW, MoM)
 DEFINE FIELD IF NOT EXISTS timestamp ON trend_metric TYPE datetime DEFAULT time::now();
 
+-- C. Directive: 平行于 L3 的指令任务表 (Hunter Tasks)
+DEFINE TABLE IF NOT EXISTS directive SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS target ON directive TYPE string; -- e.g. "Elon Musk"
+DEFINE FIELD IF NOT EXISTS type ON directive TYPE string; -- "monitor_user", "track_keyword"
+DEFINE FIELD IF NOT EXISTS status ON directive TYPE string DEFAULT "active"; -- "active", "paused", "completed"
+DEFINE FIELD IF NOT EXISTS context ON directive TYPE object; -- Extra params
+DEFINE FIELD IF NOT EXISTS last_run ON directive TYPE datetime;
+DEFINE FIELD IF NOT EXISTS created_at ON directive TYPE datetime DEFAULT time::now();
+
 
 -- ==========================================
 -- 2. L2: 逻辑与叙事层 (Logic & Narrative Layer)

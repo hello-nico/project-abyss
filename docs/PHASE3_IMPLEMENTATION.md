@@ -44,6 +44,7 @@
 1.  **`trace_narrative_chain(start_node, depth)`**:
     *   *Role*: Analyst
     *   *Logic*: 从指定节点出发，沿 `involves`, `mentions` 边游走，返回关联的概念和实体。
+    *   *Command Line*: `claude mcp add --scope project abyss-intelligence uv run src/abyss-intelligence/server.py`
 2.  **`create_surveillance_directive(target, type, context)`**:
     *   *Role*: Commander / Hunter
     *   *Logic*: 向 `directive` 表写入任务，触发后台 Hunter 机制。
@@ -68,7 +69,39 @@
 
 ---
 
-## 4. 实施路线图 (Roadmap)
+## 4. MCP Configuration (CLI Setup)
+
+请在项目根目录下运行以下命令，将所需的 MCP Servers 注册到您的 Claude 客户端（使用 `--scope project` 仅对当前项目生效）：
+
+### 1. Abyss Intelligence (Core Brain)
+*本地自研服务，基于 Python/uv*
+```bash
+claude mcp add --scope project abyss-intelligence uv run src/abyss-intelligence/server.py
+```
+
+### 2. Filesystem (Memory & Logs)
+*允许 Agent 读写项目文件*
+```bash
+claude mcp add --scope project filesystem npx -y @modelcontextprotocol/server-filesystem $(pwd)
+```
+
+### 3. Puppeteer (Eyes)
+*用于网页抓取，可作为 Hunter 的执行器*
+```bash
+claude mcp add --scope project puppeteer npx -y @modelcontextprotocol/server-puppeteer
+```
+
+### 4. Brave Search (External Knowledge)
+*用于实时搜索，需设置 BRAVE_API_KEY*
+```bash
+# 请先确保设置了 BRAVE_API_KEY 环境变量
+# export BRAVE_API_KEY=your_key_here
+claude mcp add --scope project brave-search npx -y @modelcontextprotocol/server-brave-search -e BRAVE_API_KEY=$BRAVE_API_KEY
+```
+
+---
+
+## 5. 实施路线图 (Roadmap)
 
 - [x] **Step 1: 基础设施** (Docker: SurrealDB, Browserless, RSSHub)
 - [x] **Step 2: 数据建模** (Schema: Truth-Logic-Signal 三层架构)

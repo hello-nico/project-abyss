@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "abyss-intelligence": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "src/abyss-intelligence/server.py"
+      ],
+      "env": {}
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-filesystem",
+        "/home/chencheng/py/src/project-abyss"
+      ],
+      "env": {}
+    },
+    "brave-search": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-brave-search"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "BSA7ztDw_U4Aq6sn01ufwK2I0yr-Oe8"
+      }
+    }
+  }
+}

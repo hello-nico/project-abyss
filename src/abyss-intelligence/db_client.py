@@ -1,8 +1,8 @@
 import os
 import json
-import asyncio
+import base64
+import httpx
 from typing import Any, Dict, List, Optional
-from surrealdb import Surreal
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,28 +15,70 @@ class SurrealClient:
         self.password = os.getenv("SURREAL_PASS", "root")
         self.namespace = os.getenv("SURREAL_NS", "abyss")
         self.database = os.getenv("SURREAL_DB", "core")
-        self.db = Surreal(f"ws://{self.host}:{self.port}/rpc")
+        self.base_url = f"http://{self.host}:{self.port}"
+        self.sql_url = f"{self.base_url}/sql"
+        
+        # Prepare headers
+        auth_str = f"{self.user}:{self.password}"
+        auth_b64 = base64.b64encode(auth_str.encode()).decode()
+        self.headers = {
+            "Accept": "application/json",
+            "NS": self.namespace,
+            "DB": self.database,
+            "Authorization": f"Basic {auth_b64}",
+            "Content-Type": "text/plain",
+        }
+        self.client = httpx.AsyncClient(timeout=30.0)
 
     async def connect(self):
-        """Connect and sign in"""
-        await self.db.connect()
-        await self.db.signin({"user": self.user, "pass": self.password})
-        await self.db.use(self.namespace, self.database)
-        print(f"[SurrealDB] Connected to ns:{self.namespace} db:{self.database}")
-
+        # HTTP is stateless, but we'll check connection
+        try:
+            resp = await self.client.post(self.sql_url, content="INFO FOR DB;", headers=self.headers)
+            resp.raise_for_status()
+            print(f"[SurrealDB] HTTP Connected to ns:{self.namespace} db:{self.database}")
+        except Exception as e:
+            print(f"[SurrealDB] Connection Check Failed: {e}")
+            # Don't raise here, allow retries or lazy failure
+            
     async def close(self):
-        await self.db.close()
+        await self.client.aclose()
 
     async def query(self, sql: str, params: Optional[Dict] = None) -> List[Dict]:
         """Execute a raw SurrealQL query"""
+        # SurrealDB HTTP endpoint handles params differently (usually simpler to inline or use LET)
+        # But for robustness, we will perform simple variable substitution if params are simple
+        # Or just rely on string formatting from the caller for now.
+        # The recommended way for HTTP is just sending the SQL string.
+        # If params are needed, we can prepend `LET $key = value;` to the SQL.
+        
+        final_sql = sql
+        if params:
+            # Prepend LET statements for params
+            # Note: This is a basic implementation. Complex types (objects) need JSON serialization.
+            let_stmts = []
+            for k, v in params.items():
+                val_json = json.dumps(v, default=str)
+                # SurrealQL var format
+                let_stmts.append(f"LET ${k} = {val_json};")
+            final_sql = "\n".join(let_stmts) + "\n" + sql
+
+        # Explicitly set namespace/db for every request to be safe
+        final_sql = f"USE NS {self.namespace} DB {self.database};\n{final_sql}"
+
         try:
-            result = await self.db.query(sql, params)
-            # Check for errors in result
-            if isinstance(result, list):
-                for res in result:
-                    if isinstance(res, dict) and res.get('status') == 'ERR':
-                         raise Exception(f"SurrealDB Error: {res.get('detail')}")
-            return result
+            response = await self.client.post(self.sql_url, content=final_sql, headers=self.headers)
+            response.raise_for_status()
+            
+            # SurrealDB returns a list of result objects, one for each statement
+            json_resp = response.json()
+            
+            # Check for application-level errors
+            if isinstance(json_resp, list):
+                for res in json_resp:
+                    if res.get('status') == 'ERR':
+                        raise Exception(f"SurrealDBQL Error: {json.dumps(res)}")
+            
+            return json_resp
         except Exception as e:
             print(f"[SurrealDB] Query failed: {e}")
             raise
