@@ -22,11 +22,35 @@
       "type": "stdio",
       "command": "npx",
       "args": [
+        "-y",
         "@modelcontextprotocol/server-brave-search"
       ],
       "env": {
         "BRAVE_API_KEY": "BSA7ztDw_U4Aq6sn01ufwK2I0yr-Oe8"
       }
+    },
+    "tavily": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "tavily-mcp"
+      ],
+      "env": {
+        "TAVILY_API_KEY": "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"
+      }
+    },
+    "duckduckgo": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "duckduckgo-mcp",
+        "serve"
+      ]
+    },
+    "websets": {
+      "type": "sse",
+      "url": "https://websetsmcp.exa.ai/mcp?exaApiKey=d1bfe105-effa-43b0-a967-fc7dd0847afb"
     }
   }
 }

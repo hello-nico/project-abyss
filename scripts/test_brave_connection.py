@@ -104,9 +104,14 @@ def test_brave_mcp():
     
     search_tool = next((t for t in tools if 'search' in t['name']), None)
     
+    if len(sys.argv) > 1:
+        query = " ".join(sys.argv[1:])
+    else:
+        query = "SurrealDB features"
+
     if search_tool:
         tool_name = search_tool['name']
-        print(f"🧪 Testing tool: {tool_name} with query 'SurrealDB'...")
+        print(f"🧪 Testing tool: {tool_name} with query '{query}'...")
         
         send_request({
             "jsonrpc": "2.0",
@@ -114,7 +119,7 @@ def test_brave_mcp():
             "method": "tools/call",
             "params": {
                 "name": tool_name,
-                "arguments": {"query": "SurrealDB features"}
+                "arguments": {"query": query}
             }
         })
         
